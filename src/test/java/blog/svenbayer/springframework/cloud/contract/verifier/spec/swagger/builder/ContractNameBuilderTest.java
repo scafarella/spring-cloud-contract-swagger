@@ -44,4 +44,14 @@ public class ContractNameBuilderTest {
 		});
 		assertEquals("Could not extract path of method from Swagger file: ", exception.getMessage());
 	}
+
+	@DisplayName("Allow / as path name")
+	@Test
+	public void allowSlashAsPathName() {
+		String pathName = "/";
+		AtomicInteger priority = new AtomicInteger(1);
+		HttpMethod post = HttpMethod.POST;
+		String contractName = contractNameBuilder.createContractName(priority, pathName, post);
+		assertEquals("1_POST", contractName);
+	}
 }

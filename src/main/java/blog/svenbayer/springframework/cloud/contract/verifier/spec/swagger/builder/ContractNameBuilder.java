@@ -36,6 +36,9 @@ public class ContractNameBuilder {
 	 */
 	public String createContractName(AtomicInteger priority, String pathLink, HttpMethod httpMethod) {
 		Matcher pathMatcher = Pattern.compile(PATH_EXTRACT).matcher(pathLink);
+		if(pathLink.equals("/")){
+			return priority + PATH_SEP + httpMethod.name();
+		}
 		if (!pathMatcher.find()) {
 			throw new SwaggerContractConverterException("Could not extract path of method from Swagger file: " + pathLink);
 		}
