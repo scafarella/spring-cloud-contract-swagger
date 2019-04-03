@@ -4,12 +4,15 @@ import blog.svenbayer.springframework.cloud.contract.verifier.spec.swagger.build
 import blog.svenbayer.springframework.cloud.contract.verifier.spec.swagger.exception.SwaggerContractConverterException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import io.swagger.models.ArrayModel;
 import io.swagger.models.Model;
 
+import io.swagger.models.properties.Property;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
+import joptsimple.internal.Strings;
 
 /**
  * @author Sven Bayer
@@ -43,10 +46,10 @@ public class SwaggerDefinitionsRefResolverSwagger implements SwaggerReferenceRes
 	 */
 	@Override
 	public String resolveReference(Map<String, Model> definitions) {
-		Map<String, Object> jsonMap = resolveDefinitionsRef(this.reference, definitions);
+		Object json = resolveDefinitionsRef(this.reference, definitions);
 		try {
 			ObjectMapper mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
-			String jsonString = mapper.writeValueAsString(jsonMap);
+			String jsonString = mapper.writeValueAsString(json);
 			String cleanJson = cleanupJson(jsonString);
 			return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(mapper.readTree(cleanJson));
 		} catch (IOException e) {
@@ -74,10 +77,15 @@ public class SwaggerDefinitionsRefResolverSwagger implements SwaggerReferenceRes
 	 * @param definitions the Swagger definitions
 	 * @return the key-value representation of the Swagger reference
 	 */
-	private Map<String, Object> resolveDefinitionsRef(String reference, Map<String, Model> definitions) {
+	private Object resolveDefinitionsRef(String reference, Map<String, Model> definitions) {
 		String referenceName = reference.substring(reference.lastIndexOf('/') + 1);
-		if (definitions == null || definitions.get(referenceName) == null || definitions.get(referenceName).getProperties() == null) {
+		if (definitions == null || definitions.get(referenceName) == null) {
 			throw new SwaggerContractConverterException("Could not resolve reference '" + reference + "'");
+		}
+		if(definitions.get(referenceName) instanceof ArrayModel){
+			ArrayModel arrayModel = (ArrayModel) definitions.get(referenceName);
+			Property property = arrayModel.getItems();
+			return this.responseHeaderValueBuilder.createResponseHeaderValue(Strings.EMPTY, property, definitions);
 		}
 		return definitions.get(referenceName).getProperties().entrySet().stream()
 				.collect(Collectors.toMap(Map.Entry::getKey, entry -> this.responseHeaderValueBuilder.createResponseHeaderValue(entry.getKey(), entry.getValue(), definitions)));

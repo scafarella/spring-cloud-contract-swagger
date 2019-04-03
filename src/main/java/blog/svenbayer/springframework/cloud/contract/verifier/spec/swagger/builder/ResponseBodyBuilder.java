@@ -3,9 +3,12 @@ package blog.svenbayer.springframework.cloud.contract.verifier.spec.swagger.buil
 import blog.svenbayer.springframework.cloud.contract.verifier.spec.swagger.builder.reference.ReferenceResolverFactory;
 import blog.svenbayer.springframework.cloud.contract.verifier.spec.swagger.builder.reference.SwaggerReferenceResolver;
 import blog.svenbayer.springframework.cloud.contract.verifier.spec.swagger.exception.SwaggerContractConverterException;
+import io.swagger.models.ArrayModel;
 import io.swagger.models.Model;
 import io.swagger.models.Response;
 
+import io.swagger.models.properties.Property;
+import io.swagger.models.properties.RefProperty;
 import java.util.Map;
 
 import static blog.svenbayer.springframework.cloud.contract.verifier.spec.swagger.valuefields.SwaggerFields.X_EXAMPLE;
@@ -39,6 +42,12 @@ public final class ResponseBodyBuilder {
 			} else if (response.getResponseSchema().getReference() != null) {
 				String reference = response.getResponseSchema().getReference();
 				SwaggerReferenceResolver resolver = this.refFactory.getReferenceResolver(reference, response.getVendorExtensions());
+				return resolver.resolveReference(definitions);
+			} else if (response.getResponseSchema() != null && response.getResponseSchema() instanceof ArrayModel) {
+				Property property = ((ArrayModel) response.getResponseSchema()).getItems();
+				RefProperty refProperty = (RefProperty) property;
+				String ref = refProperty.get$ref();
+				SwaggerReferenceResolver resolver = this.refFactory.getReferenceResolver(ref, response.getVendorExtensions());
 				return resolver.resolveReference(definitions);
 			} else {
 				throw new SwaggerContractConverterException("Could not parse body for response");
